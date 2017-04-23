@@ -1,53 +1,61 @@
-# Playing a basic round of Blackjack
 
-def hit(p,s):
-    p.receive(s.draw())
-    print("New hand: {} ({})".format(p.hand,p.getPoints()))
+from player import Player
+from shoe import Shoe
+from utilities import hit, newHand, deal
+import random
+from IPython.display import clear_output
 
-def newHand(d,p,s):
-    p.reset()
-    d.reset()
-    deal(d,p,s)
+def getAction():
+    r = random.randint(0,1)
+    if r == 0:
+        return 'HIT'
+    else:
+        return 'STAY'
 
-# Deal
-def deal(d,p,s):
-    d.receive(s.draw())
-    p.receive(s.draw())
-    d.receive(s.draw())
-    p.receive(s.draw())
-    print("Dealer's hand: {} ({})".format(dealer.hand,dealer.getPoints()))
-    print("Player's hand: {} ({})".format(player.hand,player.getPoints()))
-
-#
-# Start up
-#
-
+# Initialize
 shoe = Shoe(1)
 dealer = Player()
 player = Player()
+allActions=('HIT','STAY',)
+Q = defaultdict(float)
 
-deal(dealer,player,shoe)
+# Starting state for a hand/episode
+newHand(dealer,player,shoe)
 
-if dealer.getPoints() == 21:
-    print("Dealer wins! Player loses :-(")
-elif player.getPoints() == 21:
-    print("Player wins! Dealer loses!")
-else:
-    while player.getPoints() < 21 and player.getPoints() < dealer.getPoints():
-        print("Player hits...")
-        hit(player,shoe)
-    print("Player stays.")
+# 1. Choose an action
+action = getAction()
+
+# 2. Observe the state
+currentState=(player.getPoints(),dealer.hand[0],action)
+print("Current state: {}".format(currentState))
+
+# 3. Do the action
+if (action == 'HIT'):
+    print("Player {}: ".format(action), end=' ')
+    hit(player,shoe)
+newState = (player.getPoints(),dealer.hand[0])
+
+# Calculate reward
+if (action == 'STAY'):
     while dealer.getPoints() < 17:
-        print("Dealer hits...")
+        print("Dealer HIT: ", end=' ')
         hit(dealer,shoe)
-    print("Dealer stays.")
-    if player.getPoints() > 21:
-        print("Player busted :-(")
+    
+    if (player.getPoints() > dealer.getPoints()):
+        reward = 1
     elif dealer.getPoints() > 21:
-        print("Dealer busted :-(")
-    elif player.getPoints() > dealer.getPoints():
-        print("Player wins!")
-    elif dealer.getPoints() > player.getPoints():
-        print("Dealer wins :-(")
+        reward = 1
+    elif dealer.getPoints() == player.getPoints():
+        reward = 0
+    else: 
+        reward = -1
+else:
+    if player.getPoints() > 21:
+        reward = -1
     else:
-        print("Hand is a draw: no winner.")
+        reward = 0
+
+# 4. Update Q(s,a)
+Q[currentState] = Q[currentState] + 0.08*(reward + max(Q[newState+allActions[0:1]],Q[newState+allActions[1:2]]) - Q[currentState])
+
+Q
