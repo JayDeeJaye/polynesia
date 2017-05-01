@@ -20,4 +20,6 @@ class Player:
             points = sum(self.hand)
 
         return points
-        
+    
+    def hasBlackjack(self):
+        return (self.getPoints() == 21 and len(self.hand) == 2)
