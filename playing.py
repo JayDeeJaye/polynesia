@@ -21,7 +21,7 @@ losses = 0
 pushes = 0
 WALLET=[]
 R=[0]
-n = 100
+n = 1000
 dealer = Player("Dealer")
 players=[QPolicyPlayer("Q Player",1000.0)]
 players.append(OPolicyPlayer("Basic Player",1000.0))

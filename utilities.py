@@ -33,7 +33,10 @@ def getTrainAction(Q,N,s):
 
 # Updated Q(s,a) value
 def getUpdatedQsa(Q,sa,r,s1,A):
-    return Q[sa] + 0.08*(r + discount*max(Q[s1+A[0:1]],Q[s1+A[1:2]]) - Q[sa])
+    logging.debug("Updating Q{} {} ...".format(sa,Q[sa]))
+    q = Q[sa] + 0.08*(r + discount*max(Q[s1+A[0:1]],Q[s1+A[1:2]]) - Q[sa])
+    logging.debug("Updated Q{} {} ...".format(sa,q))
+    return q
 
 def getReward(p,d):
     if p.getPoints() > 21:

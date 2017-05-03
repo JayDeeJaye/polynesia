@@ -13,15 +13,19 @@ from IPython.display import clear_output
 #logger.setLevel(logging.DEBUG)
 
 # Initialize
+# Game elements
 shoe = Shoe(1)
 dealer = Player("Dealer")
-player = Player("Player1")
+players = [Player("Player 1")]
+players.append(Player("Player 2"))
+
+ACTIONS=('HIT','STAND',)
+
+# Learning functions
 Q = defaultdict(float)
 N = defaultdict(float)
-RTG = [] # Reward to Go function
-CR = [] # Cumulative reward function
-LOSS = [] # Loss function
-ACTIONS=('HIT','STAND',)
+
+# Learning variables
 epsilon = 10
 lr = 0.08
 discount = 0.99

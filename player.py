@@ -16,6 +16,8 @@ class Player:
 
     def reset(self):
         self.hand = []
+        self.lastState = ()
+        self.lastAction = ''
         
     def receive(self,card):
         self.hand += [card]

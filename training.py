@@ -4,7 +4,7 @@ import random
 import logging
 
 logger = logging.getLogger()
-fhandler = logging.FileHandler(filename='Training.log', mode='a')
+fhandler = logging.FileHandler(filename='Training.log', mode='w')
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 fhandler.setFormatter(formatter)
 logger.addHandler(fhandler)
@@ -12,86 +12,78 @@ logger.setLevel(logging.INFO)
 
 # Intitalize first!
 # Train with a number of hands
-bankroll = 500.00
-netWins = 0
 wins = 0
 losses = 0
 pushes = 0
-WALLET=[]
-RMS=[]
 R=[0]
-n = 1000000
+n = 100000
 
 # print("Starting bankroll: {}".format(bankroll))
 # Training
 for i in range(n):
-    # Initialize s
-    newHand([dealer,player],shoe)
+    # New episode
+    logging.debug("==== Episode {} ====".format(i))
+    newHand([dealer]+players,shoe)
     logging.debug("Dealer's hand: {} ({})".format(dealer.hand,dealer.getPoints()))
-    logging.debug("Player's hand: {} ({})".format(player.hand,player.getPoints()))
-    s = (player.getPoints(),dealer.hand[0],)
-    done = False
-    while True:
-        logging.debug("Current state: {}".format(s))
-        # choose an action
-        a = getTrainAction(Q,N,s)
-        logging.debug("Player {}: ".format(a))
+    
+    for p in players:
+        logging.debug("{}'s hand: {} ({})".format(p.name,p.hand,p.getPoints()))
+        p.lastState = (p.getPoints(),dealer.hand[0],)
+        done = False
+        while not done:
+            s = p.lastState
 
-        # Take the action
-        if a == 'HIT':
-            hit(player,shoe)
-            if player.getPoints() > 21:
+            # choose an action
+            logging.debug("Current state: {}".format(s))
+            a = getTrainAction(Q,N,s)
+            logging.debug("{} {}: ".format(p.name,a))
+
+            # Take the action
+            if a == 'HIT':
+                hit(p,shoe)
+                if p.getPoints() > 21:
+                    done = True
+            else:
                 done = True
-        else:
-            # Player stands; play out the dealer
-            while dealer.getPoints() < 17:
-                logging.debug("Dealer HIT: ")
-                hit(dealer,shoe)
-            done = True
-        s1 = (player.getPoints(),dealer.hand[0],)
 
-        # Calculate the reward
-        if not done:
-            r = 0
-        else:
-            r = getReward(player,dealer)
+            # Update the intermediary Q(s,a)
+            if not done:
+                r = 0
+                s1 = (p.getPoints(),dealer.hand[0],)
 
-        # Update Q(s,a)
+                # Update Q(s,a)
+                Q[s+(a,)] = getUpdatedQsa(Q,s+(a,),r,s1,ACTIONS)
+                N[s] += 1
+                p.lastState = s1
+                p.lastAction = a
+
+            # This player has reached her terminal state
+    
+    # All players stand or busted; play out the dealer
+    while dealer.getPoints() < 17:
+        logging.debug("Dealer HIT: ")
+        hit(dealer,shoe)
+    logging.debug("Dealer STAND: ")
+
+    # Update final Q(s,a)
+    for p in players:
+        r = getReward(p,dealer)
+        s = p.lastState
+        s1 = (p.getPoints(),dealer.hand[0],)
         Q[s+(a,)] = getUpdatedQsa(Q,s+(a,),r,s1,ACTIONS)
         N[s] += 1
-        s = s1    
 
-        # Stop if we're at the terminal state
-        if done:
-            break
+        # Metrics
+        if r < 0:
+            logging.debug("Lose ({})".format(r))
+            losses += 1
+        elif r > 0:
+            logging.debug("Win ({})".format(r))
+            wins += 1
+        else:
+            logging.debug("Push ({})".format(r))
+            pushes += 1
 
-    # Calculate and keep track of wins/losses
-    if r < 0:
-        logging.debug("Lose ({})".format(r))
-        losses += 1
-    elif r > 0:
-        logging.debug("Win ({})".format(r))
-        wins += 1
-    else:
-        logging.debug("Push ({})".format(r))
-        pushes += 1
+print("\n\tWins: {} %".format(100*(wins/(wins+losses+pushes))))
 
-    # Data from the episode    
-    #R.append(r)
-    #RTG.append(sum([(R[t]*(discount**t)) for t in range(len(R))]))
-    #CR.append(sum(R))
-
-print("\n\tWins: {} %\n\tOutcome: {}".format(100*(wins/(wins+losses+pushes)),sum(R)))
-
-#fig = plt.figure(1,figsize=(12,6))
-
-#plt.subplot(121)
-#plt.plot(CR)
-#plt.title('Cumulative reward for {} hands'.format(n))
-
-#plt.subplot(122)
-#plt.plot(RTG)
-#plt.title('Discounted Reward to Go for {} hands'.format(n))
-
-#fig.tight_layout()
 logger.removeHandler(fhandler)
