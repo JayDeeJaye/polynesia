@@ -1,8 +1,6 @@
 # Player class
 import random
 
-ACTIONS = ['HIT','STAND']
-
 class Player:
     def __init__(self,name,bankRoll=0):
         self.name = name
@@ -42,6 +40,7 @@ class Player:
 
 class QPolicyPlayer(Player):
     def getAction(self,s):
+        global Q
         qas = {q: Q[q] for q in Q.keys() if q[0:2] == s}
         sa = max(qas.keys(), key=lambda k: qas[k])
         return sa[-1]
